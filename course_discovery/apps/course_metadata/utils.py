@@ -13,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 from cairosvg import svg2png
 from django.conf import settings
+from django.core import validators
 from django.core.files.base import ContentFile
 from django.db import models, transaction
 from django.utils.functional import cached_property
@@ -25,7 +26,8 @@ from stdimage.models import StdImageFieldFile
 from course_discovery.apps.core.models import SalesforceConfiguration
 from course_discovery.apps.core.utils import serialize_datetime
 from course_discovery.apps.course_metadata.constants import (
-    HTML_TAGS_ATTRIBUTE_WHITELIST, IMAGE_TYPES, SLUG_FORMAT_REGEX, SUBDIRECTORY_SLUG_FORMAT_REGEX
+    HTML_TAGS_ATTRIBUTE_WHITELIST, IMAGE_TYPES, IN_REVIEW_STATUS, POST_REVIEW_STATUS, SLUG_FORMAT_REGEX,
+    SUBDIRECTORY_SLUG_FORMAT_REGEX
 )
 from course_discovery.apps.course_metadata.exceptions import (
     EcommerceSiteAPIClientException, MarketingSiteAPIClientException
@@ -1035,3 +1037,34 @@ def is_valid_uuid(val):
         return True
     except ValueError:
         return False
+
+
+def validate_slug_format(url_slug, course):
+    """
+    Given a url_slug and subdirectory_slug_flag it will check if url_slug is valid or not based on
+    subdirectory_slug_flag and course_run_statuses
+
+    Args:
+        url_slug: url_slug to be validated
+        course: course object
+
+    Returns:
+        valid_slug_flag: True if url_slug is valid else False
+    """
+    valid_slug_flag = False
+
+    # pylint: disable=line-too-long
+    if course.product_source.slug == settings.DEFAULT_PRODUCT_SOURCE_SLUG and IS_SUBDIRECTORY_SLUG_FORMAT_ENABLED.is_enabled():
+        if any(status in POST_REVIEW_STATUS + IN_REVIEW_STATUS for status in course.course_run_statuses):
+            valid_slug_flag = is_valid_slug_format(url_slug)
+            # TODO: remove this check once all OCM courses are migrated to subdirectory slug format
+            if not valid_slug_flag:
+                validators.validate_slug(url_slug)
+                valid_slug_flag = True
+        else:
+            valid_slug_flag = is_valid_slug_format(url_slug) or validators.validate_slug(url_slug)
+            valid_slug_flag = True
+    else:
+        validators.validate_slug(url_slug)
+        valid_slug_flag = True
+    return valid_slug_flag

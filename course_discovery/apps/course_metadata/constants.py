@@ -1,5 +1,7 @@
 from enum import Enum
 
+from course_discovery.apps.course_metadata.choices import CourseRunStatus
+
 COURSE_ID_REGEX = r'[^/+]+(/|\+)[^/+]+'
 COURSE_RUN_ID_REGEX = r'[^/+]+(/|\+)[^/+]+(/|\+)[^/]+'
 COURSE_SKILLS_URL_NAME = 'course_skills'
@@ -29,6 +31,9 @@ DRIVE_LINK_PATTERNS = [r"https://docs\.google\.com/uc\?id=\w+",
                        r"https://drive\.google\.com/file/d/\w+/view?usp=sharing"]
 
 GOOGLE_CLIENT_API_SCOPE = ['https://www.googleapis.com/auth/drive.readonly']
+
+IN_REVIEW_STATUS = [CourseRunStatus.InternalReview, CourseRunStatus.LegalReview]
+POST_REVIEW_STATUS = [CourseRunStatus.Reviewed, CourseRunStatus.Published]
 
 
 class PathwayType(Enum):
